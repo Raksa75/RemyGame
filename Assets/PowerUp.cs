@@ -1,50 +1,61 @@
 using UnityEngine;
 using TMPro;
 
+[RequireComponent(typeof(Collider), typeof(Rigidbody))]
 public class PowerUp : MonoBehaviour
 {
-    [Header("Références")]
-    [Tooltip("Référence au script PlayerShooting du joueur (à assigner dans l'Inspector)")]
-    public PlayerShooting shooter;
-
-    [Header("Mouvement")]
-    [Tooltip("Vitesse de déplacement dans la direction initiale")]
-    public float moveSpeed = 3f;
-    private Vector3 moveDirection;
-
-    [Header("Vie")]
-    [Tooltip("Points de vie maximum (entier)")]
-    public int maxHealth = 3;
-    private int currentHealth;
-
-    [Header("Bonus")]
-    [Tooltip("Bonus d'attackSpeed à donner au joueur à la destruction")]
-    public float attackSpeedBonus = 0.5f;
-
-    [Header("UI Texte HP")]
-    [Tooltip("Référence au TextMeshPro 3D qui affichera simplement le nombre de HP")]
+    [Header("Références (à assigner dans l'Inspector)")]
+    [Tooltip("GameObject du joueur (celui portant le script de tir)")]
+    public GameObject playerObject;
+    [Tooltip("TextMeshPro 3D qui affichera les PV restants")]
     public TextMeshPro hpText;
+
+    [Header("Paramètres du PowerUp")]
+    [Tooltip("PV initiaux")]
+    public int maxHealth = 3;
+    [Tooltip("Bonus d'attackSpeed donné au joueur")]
+    public float attackSpeedBonus = 0.5f;
+    [Tooltip("Vitesse de déplacement en ligne droite")]
+    public float moveSpeed = 3f;
+
+    private int currentHealth;
+    private Vector3 moveDirection;
+    private PlayerShooting shooterScript;
 
     void Start()
     {
-        // Initialisation de la vie et du mouvement
+        // Initialise la vie et la direction
         currentHealth = maxHealth;
         moveDirection = transform.forward * -1f;
 
-        // Vérifie que le TextMeshPro est bien assigné
-        if (hpText == null)
-            Debug.LogError("[PowerUp] hpText non assigné !");
+        // Configure UI
+        if (hpText != null)
+            hpText.text = currentHealth.ToString();
         else
-            UpdateHPText();
+            Debug.LogError("[PowerUp] hpText non assigné !");
 
-        // Vérifie la référence au shooter
-        if (shooter == null)
-            Debug.LogError("[PowerUp] shooter (PlayerShooting) non assigné !");
+        // Récupère le script PlayerShooting depuis le GameObject assigné
+        if (playerObject != null)
+        {
+            shooterScript = playerObject.GetComponent<PlayerShooting>();
+            if (shooterScript == null)
+                Debug.LogError("[PowerUp] Aucun PlayerShooting trouvé sur playerObject !");
+        }
+        else
+        {
+            Debug.LogError("[PowerUp] playerObject non assigné !");
+        }
+
+        // Configure Collider et Rigidbody
+        var col = GetComponent<Collider>();
+        col.isTrigger = true;
+        var rb = GetComponent<Rigidbody>();
+        rb.isKinematic = true;
     }
 
     void Update()
     {
-        // Avance tout droit
+        // Déplacement constant en world space
         transform.Translate(moveDirection * moveSpeed * Time.deltaTime, Space.World);
     }
 
@@ -53,38 +64,26 @@ public class PowerUp : MonoBehaviour
         if (other.CompareTag("Bullet"))
         {
             Destroy(other.gameObject);
-            TakeDamage(1);
+            currentHealth--;
+            if (hpText != null)
+                hpText.text = currentHealth.ToString();
+
+            if (currentHealth <= 0)
+                ApplyBuffAndDestroy();
         }
-    }
-
-    void TakeDamage(int dmg)
-    {
-        currentHealth -= dmg;
-        UpdateHPText();
-
-        if (currentHealth <= 0)
-            Die();
-    }
-
-    void UpdateHPText()
-    {
-        // Affiche uniquement le nombre de HP restants
-        hpText.text = currentHealth.ToString();
-    }
-
-    void Die()
-    {
-        // Applique le bonus si la référence est correcte
-        if (shooter != null)
+        else if (other.gameObject == playerObject)
         {
-            shooter.attackSpeed += attackSpeedBonus;
-            Debug.Log($"[PowerUp] attackSpeed augmenté : {shooter.attackSpeed:F2}");
+            ApplyBuffAndDestroy();
         }
-        else
-        {
-            Debug.LogError("[PowerUp] Impossible d'appliquer le bonus : shooter non assigné.");
-        }
+    }
 
+    private void ApplyBuffAndDestroy()
+    {
+        if (shooterScript != null)
+        {
+            shooterScript.attackSpeed += attackSpeedBonus;
+            Debug.Log($"[PowerUp] attackSpeed augmenté à {shooterScript.attackSpeed:F2}");
+        }
         Destroy(gameObject);
     }
 }

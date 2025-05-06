@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
-using System.Collections.Generic;
 
+[RequireComponent(typeof(Collider), typeof(Rigidbody))]
 public class PowerUpMultiplier : MonoBehaviour
 {
     [Header("Références")]
@@ -33,6 +33,15 @@ public class PowerUpMultiplier : MonoBehaviour
 
     private int currentValue;
 
+    void Awake()
+    {
+        // Configure Collider en trigger et Rigidbody kinematic pour OnTriggerEnter
+        Collider col = GetComponent<Collider>();
+        col.isTrigger = true;
+        Rigidbody rb = GetComponent<Rigidbody>();
+        rb.isKinematic = true;
+    }
+
     void Start()
     {
         // Initialisation de la valeur et de l'UI
@@ -48,8 +57,6 @@ public class PowerUpMultiplier : MonoBehaviour
         // Vérifie les références essentielles
         if (playerPrefab == null)
             Debug.LogError("[PowerUpMultiplier] playerPrefab non assigné !");
-
-        // Si aucun container défini, on ne parent pas les clones
     }
 
     void Update()
@@ -134,3 +141,4 @@ public class PowerUpMultiplier : MonoBehaviour
         Debug.Log($"[PowerUpMultiplier] Spawned {currentValue} clone(s).");
     }
 }
+
