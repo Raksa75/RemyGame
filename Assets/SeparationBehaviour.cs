@@ -1,62 +1,63 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
-public class SeparationBehaviour : MonoBehaviour
+public class SeparationController : MonoBehaviour
 {
-    [Header("Séparation (clones only)")]
-    [Tooltip("Rayon de détection des autres clones")]
-    public float separationRadius = 1f;
-    [Tooltip("Force de répulsion")]
-    public float separationStrength = 1f;
+    [Tooltip("Distance minimale entre clones")]
+    public float desiredSeparation = 1f;
+    [Tooltip("Force de sÃ©paration (units/sec)")]
+    public float separationStrength = 2f;
+    [Tooltip("LayerMask des clones seuls")]
+    public LayerMask cloneLayer;
+    [Tooltip("LayerMask de l'environnement (murs...)")]
+    public LayerMask environmentMask;
 
-    Rigidbody rb;
+    float radius;
 
-    void Awake()
+    void Start()
     {
-        rb = GetComponent<Rigidbody>();
-        // Empêche toute rotation pour rester droit
-        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        // On rÃ©cupÃ¨re le rayon de collision via le collider
+        radius = GetComponent<Collider>().bounds.extents.magnitude;
     }
 
     void FixedUpdate()
     {
-        // On ne sépare que si c'est bien un clone
-        if (!CompareTag("Clone")) return;
+        // 1) RÃ©cupÃ¨re tous les clones dans le spectre
+        Collider[] hits = Physics.OverlapSphere(
+            transform.position,
+            desiredSeparation,
+            cloneLayer,
+            QueryTriggerInteraction.Ignore
+        );
 
-        Vector3 force = Vector3.zero;
+        Vector3 move = Vector3.zero;
         int count = 0;
-
-        // Récupère tous les colliders (y compris triggers) dans le rayon
-        Collider[] hits = Physics.OverlapSphere(transform.position, separationRadius);
-        foreach (var hit in hits)
+        foreach (var h in hits)
         {
-            // Vérifie que c'est un autre clone avec rigidbody
-            if (hit.CompareTag("Clone") && hit.attachedRigidbody != null && hit.gameObject != gameObject)
+            if (h.gameObject == gameObject) continue;
+            float d = Vector3.Distance(transform.position, h.transform.position);
+            if (d > 0f && d < desiredSeparation)
             {
-                Vector3 diff = transform.position - hit.transform.position;
-                float dist = diff.magnitude;
-                if (dist > 0f)
-                {
-                    // Pousse plus fort si plus proche
-                    force += diff.normalized / dist;
-                    count++;
-                }
+                // Pousse proportionnel Ã  la proximitÃ©
+                move += (transform.position - h.transform.position).normalized * ((desiredSeparation - d) / desiredSeparation);
+                count++;
             }
         }
+        if (count == 0) return;
 
-        if (count > 0)
+        // 2) Moyenne, normalisation puis Ã©chelle par la force et le time
+        move = (move / count).normalized * separationStrength * Time.fixedDeltaTime;
+
+        // 3) Ne bouge que si la nouvelle position est libre de murs
+        Vector3 target = transform.position + move;
+        if (!Physics.CheckSphere(target, radius, environmentMask, QueryTriggerInteraction.Ignore))
         {
-            // Moyenne, normalisation, puis force
-            force = (force / count).normalized * separationStrength;
-            // VelocityChange pour un impact instantané, sans tenir compte de la masse
-            rb.AddForce(force, ForceMode.VelocityChange);
+            transform.position = target;
         }
     }
 
-    // Utile pour voir le rayon dans la scène
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, separationRadius);
+        Gizmos.DrawWireSphere(transform.position, desiredSeparation);
     }
 }

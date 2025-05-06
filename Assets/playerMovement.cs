@@ -1,38 +1,48 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerMovement : MonoBehaviour
+public class HorizontalMovementController : MonoBehaviour
 {
-    [Header("Mouvement horizontal")]
-    [Tooltip("Vitesse de dÈplacement du joueur sur l'axe X")]
+    [Header("Param√®tres")]
+    [Tooltip("Vitesse de d√©placement sur l'axe X")]
     public float speed = 5f;
+    [Tooltip("Mask de l'environnement (murs, obstacles) utilis√© pour CheckSphere si besoin)")]
+    public LayerMask environmentMask;
 
     private CharacterController cc;
 
-    void Start()
-    {
-        // RÈcupËre le CharacterController
-        cc = GetComponent<CharacterController>();
+    // -1 = bloqu√© √† gauche, +1 = bloqu√© √† droite, 0 = pas bloqu√©
+    private static float blockedDir = 0f;
 
-        // Verrouille et cache le curseur
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+    void Awake()
+    {
+        cc = GetComponent<CharacterController>();
     }
 
     void Update()
     {
-        // RÈcupËre uniquement l'axe horizontal (A/D ou FlËches Gauche/Droite)
+        // 1) Lecture input horizontal uniquement
         float h = Input.GetAxis("Horizontal");
+        if (Mathf.Abs(h) < 0.01f)
+            return;
 
-        // PrÈpare un dÈplacement sur X seulement
+        // 2) Si on est bloqu√© dans cette direction, on ne bouge pas
+        float sign = Mathf.Sign(h);
+        if (blockedDir != 0f && sign == blockedDir)
+            return;
+        // si on va en sens inverse, on d√©bloque
+        if (blockedDir != 0f && sign == -blockedDir)
+            blockedDir = 0f;
+
+        // 3) Tente le d√©placement
         Vector3 move = new Vector3(h, 0f, 0f);
+        CollisionFlags flags = cc.Move(move.normalized * speed * Time.deltaTime);
 
-        // Si le joueur appuie suffisamment, on dÈplace
-        if (Mathf.Abs(h) > 0.1f)
+        // 4) Si collision lat√©rale, on bloque ce sens
+        if ((flags & CollisionFlags.Sides) != 0)
         {
-            cc.Move(move.normalized * speed * Time.deltaTime);
+            blockedDir = sign;
+            Debug.Log($"[HorizontalMovement] Bloqu√© c√¥t√© {(sign > 0 ? "droite" : "gauche")}");
         }
-        // ATTENTION : on ne met PAS transform.forward = Ö, 
-        // le personnage garde toujours son orientation initiale (vers +Z)
     }
 }

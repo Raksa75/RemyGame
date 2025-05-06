@@ -2,13 +2,13 @@ using UnityEngine;
 
 public class PlayerShooting : MonoBehaviour
 {
-    [Header("Références")]
-    [Tooltip("Prefab de la balle à instancier")]
+    [Header("Rï¿½fï¿½rences")]
+    [Tooltip("Prefab de la balle ï¿½ instancier")]
     public GameObject bulletPrefab;
-    [Tooltip("Point d'émission des balles (vide GameObject)")]
+    [Tooltip("Point d'ï¿½mission des balles (vide GameObject)")]
     public Transform firePoint;
 
-    [Header("Paramètres de tir")]
+    [Header("Paramï¿½tres de tir")]
     [Tooltip("Cadence de tir (nombre de tirs par seconde)")]
     public float attackSpeed = 2f;
     [Tooltip("Vitesse initiale de la balle")]
@@ -18,10 +18,10 @@ public class PlayerShooting : MonoBehaviour
 
     void Update()
     {
-        // Décrémente le timer
+        // Dï¿½crï¿½mente le timer
         cooldownTimer -= Time.deltaTime;
 
-        // Si le cooldown est écoulé, on tire et on réinitialise le timer
+        // Si le cooldown est ï¿½coulï¿½, on tire et on rï¿½initialise le timer
         if (cooldownTimer <= 0f)
         {
             Shoot();
@@ -44,6 +44,6 @@ public class PlayerShooting : MonoBehaviour
         // Impulsion initiale
         Rigidbody rb = bullet.GetComponent<Rigidbody>();
         if (rb != null)
-            rb.velocity = firePoint.forward * bulletSpeed;
+            rb.linearVelocity = firePoint.forward * bulletSpeed;
     }
 }
