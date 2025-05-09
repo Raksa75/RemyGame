@@ -141,6 +141,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 5
+  environmentMask:
+    serializedVersion: 2
+    m_Bits: 0
+  wallCheckBuffer: 0.05
 --- !u!114 &1642846545174295649
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -164,19 +168,19 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5580735357243324611}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: af1876e943aa48a4f876adc70cee07f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  desiredSeparation: 1
+  desiredSeparation: 3
   separationStrength: 5
   cloneLayer:
     serializedVersion: 2
     m_Bits: 256
   environmentMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
 --- !u!143 &5744987787651813830
 CharacterController:
   m_ObjectHideFlags: 0
