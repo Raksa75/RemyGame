@@ -143,11 +143,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 5
-  jumpForce: 7
+  jumpForce: 4
   gravity: 20
   environmentMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   wallCheckBuffer: 0.05
 --- !u!114 &1642846545174295649
 MonoBehaviour:

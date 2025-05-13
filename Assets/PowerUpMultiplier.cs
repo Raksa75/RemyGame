@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Collections;
 
 [RequireComponent(typeof(Collider), typeof(Rigidbody))]
 public class PowerUpMultiplier : MonoBehaviour
@@ -11,7 +12,6 @@ public class PowerUpMultiplier : MonoBehaviour
     public Transform clonesContainer;
     [Tooltip("TextMeshPro affichant la valeur actuelle")]
     public TextMeshPro hpText;
-    [Tooltip("Référence au GroupManager")]
     private GroupManager gm;
 
     [Header("Mouvement du PowerUp")]
@@ -47,7 +47,7 @@ public class PowerUpMultiplier : MonoBehaviour
     void Start()
     {
         gm = FindFirstObjectByType<GroupManager>();
-        currentValue = baseValue / 3;  // Nerf du nombre de clones
+        currentValue = baseValue / 3;
 
         if (hpText != null)
             hpText.text = currentValue.ToString();
@@ -61,9 +61,12 @@ public class PowerUpMultiplier : MonoBehaviour
     void Update()
     {
         transform.Translate(moveDirection * moveSpeed * Time.deltaTime, Space.World);
+
+        // Mise à jour dynamique du texte du buff
+        UpdateBuffText();
     }
 
-    private void OnTriggerEnter(Collider other)
+    void OnTriggerEnter(Collider other)
     {
         Debug.Log($"[PowerUpMultiplier] Collision détectée avec {other.gameObject.name}");
 
@@ -71,12 +74,29 @@ public class PowerUpMultiplier : MonoBehaviour
         {
             Destroy(other.gameObject);
             currentValue++;
-            if (hpText != null)
-                hpText.text = currentValue.ToString();
+            UpdateBuffText();
         }
         else if (other.CompareTag("Player"))
         {
+            // **Correction** : Ignorer la collision entre le joueur et le buff immédiatement
+            foreach (var bonusCollider in GetComponentsInChildren<Collider>())
+            {
+                foreach (var playerCollider in other.GetComponentsInChildren<Collider>())
+                {
+                    Physics.IgnoreCollision(bonusCollider, playerCollider, true);
+                }
+            }
+
             ApplyBuffAndDestroy(other.transform);
+        }
+    }
+
+    private void UpdateBuffText()
+    {
+        if (hpText != null)
+        {
+            hpText.text = currentValue.ToString();
+            hpText.ForceMeshUpdate();
         }
     }
 
@@ -87,21 +107,35 @@ public class PowerUpMultiplier : MonoBehaviour
 
         if (gm != null)
         {
-            int totalClones = Mathf.Max(1, currentValue / 3);  // Nerf du multiplicateur
+            int totalClones = Mathf.Max(1, currentValue / 3);
+
+            Debug.Log($"[PowerUpMultiplier] Spawn de {totalClones} clones nerfés.");
 
             for (int i = 0; i < totalClones; i++)
             {
                 SpawnClone(playerTransform);
             }
-
-            Debug.Log($"[PowerUpMultiplier] Spawn de {totalClones} clones nerfés.");
         }
         else
         {
             Debug.LogError("[PowerUpMultiplier] Impossible de trouver GroupManager !");
         }
 
+        // **Correction** : Stabilise la position du joueur au sol après avoir pris le buff
+        StartCoroutine(PlacePlayerOnGround(playerTransform));
+
         Destroy(gameObject);
+    }
+
+    private IEnumerator PlacePlayerOnGround(Transform playerTransform)
+    {
+        yield return new WaitForSeconds(0.1f);
+
+        RaycastHit hit;
+        if (Physics.Raycast(playerTransform.position, Vector3.down, out hit, 3f, environmentMask))
+        {
+            playerTransform.position = hit.point;
+        }
     }
 
     private void SpawnClone(Transform playerTransform)
@@ -132,18 +166,23 @@ public class PowerUpMultiplier : MonoBehaviour
         if (!found)
             spawnPos = playerTransform.position + new Vector3(Random.Range(-spawnRadius, spawnRadius), 0f, Random.Range(-spawnRadius, spawnRadius));
 
+        // **Correction** : Décaler la hauteur pour éviter la téléportation brutale
+        spawnPos.y -= 0.5f;
+
         GameObject clone = Instantiate(playerPrefab, spawnPos, playerTransform.rotation);
         if (clonesContainer != null)
             clone.transform.SetParent(clonesContainer, true);
 
         clone.tag = "Clone";
 
-        Collider[] cloneCols = clone.GetComponentsInChildren<Collider>();
-        Collider[] playerCols = playerTransform.GetComponentsInChildren<Collider>();
-
-        foreach (var c in cloneCols)
-            foreach (var pc in playerCols)
-                Physics.IgnoreCollision(c, pc);
+        // **Ignore temporairement les collisions entre le joueur et le clone**
+        foreach (var cloneCol in clone.GetComponentsInChildren<Collider>())
+        {
+            foreach (var playerCol in playerTransform.GetComponentsInChildren<Collider>())
+            {
+                Physics.IgnoreCollision(cloneCol, playerCol, true);
+            }
+        }
 
         Debug.Log($"[PowerUpMultiplier] Clone spawné à {spawnPos}");
     }

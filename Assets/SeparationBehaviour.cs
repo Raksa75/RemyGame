@@ -44,6 +44,9 @@ public class SeparationBehaviour : MonoBehaviour
 
         move = (move / count).normalized * separationStrength * Time.fixedDeltaTime;
 
+        // **Correction** : Bloque la modification de la hauteur (y) pour éviter la téléportation
+        move.y = 0f;
+
         Vector3 target = transform.position + move;
 
         // Empêche la fusion et assure l’interaction avec les murs
