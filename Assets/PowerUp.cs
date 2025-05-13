@@ -5,16 +5,15 @@ using TMPro;
 public class PowerUp : MonoBehaviour
 {
     [Header("Références")]
-    [Tooltip("Référence automatique du joueur")]
-    private PlayerShooting shooterScript;
+    private GroupManager gm;
     [Tooltip("TextMeshPro affichant les PV restants")]
     public TextMeshPro hpText;
 
     [Header("Paramètres du PowerUp")]
-    [Tooltip("Points de vie initiaux du buff")]
+    [Tooltip("PV initiaux du buff")]
     public int maxHealth = 3;
-    [Tooltip("Bonus d'attackSpeed donné au joueur")]
-    public float attackSpeedBonus = 0.5f;
+    [Tooltip("Bonus d'attackSpeed appliqué à tous les clones (divisé par 3 pour le nerf)")]
+    public float attackSpeedBonus = 0.5f / 3f;
     [Tooltip("Vitesse de déplacement")]
     public float moveSpeed = 3f;
 
@@ -23,23 +22,19 @@ public class PowerUp : MonoBehaviour
 
     void Start()
     {
-        // Initialisation
         currentHealth = maxHealth;
         moveDirection = transform.forward * -1f;
 
-        // Utilisation de FindFirstObjectByType<T>() au lieu de FindObjectOfType<T>()
-        shooterScript = FindFirstObjectByType<PlayerShooting>();
+        gm = FindFirstObjectByType<GroupManager>();
 
-        if (shooterScript == null)
-            Debug.LogError("[PowerUp] Aucun PlayerShooting trouvé !");
+        if (gm == null)
+            Debug.LogError("[PowerUp] Aucun GroupManager trouvé !");
 
-        // Vérification de l'UI
         if (hpText != null)
             hpText.text = currentHealth.ToString();
         else
             Debug.LogError("[PowerUp] hpText non assigné !");
 
-        // Configuration Collider & Rigidbody
         var col = GetComponent<Collider>();
         col.isTrigger = true;
         var rb = GetComponent<Rigidbody>();
@@ -48,7 +43,6 @@ public class PowerUp : MonoBehaviour
 
     void Update()
     {
-        // Déplacement constant
         transform.Translate(moveDirection * moveSpeed * Time.deltaTime, Space.World);
     }
 
@@ -60,7 +54,8 @@ public class PowerUp : MonoBehaviour
         {
             Destroy(other.gameObject);
             currentHealth--;
-            UpdateUIText();
+            if (hpText != null)
+                hpText.text = currentHealth.ToString();
 
             if (currentHealth <= 0)
                 ApplyBuffAndDestroy();
@@ -71,25 +66,26 @@ public class PowerUp : MonoBehaviour
         }
     }
 
-    private void UpdateUIText()
-    {
-        if (hpText != null)
-            hpText.text = currentHealth.ToString();
-    }
-
     private void ApplyBuffAndDestroy()
     {
-        if (shooterScript == null)
-            shooterScript = FindFirstObjectByType<PlayerShooting>();
+        if (gm == null)
+            gm = FindFirstObjectByType<GroupManager>();
 
-        if (shooterScript != null)
+        if (gm != null)
         {
-            shooterScript.attackSpeed += attackSpeedBonus;
-            Debug.Log($"[PowerUp] attackSpeed augmenté à {shooterScript.attackSpeed:F2}");
+            foreach (GameObject player in gm.players)
+            {
+                PlayerShooting shooter = player.GetComponent<PlayerShooting>();
+                if (shooter != null)
+                {
+                    shooter.attackSpeed += attackSpeedBonus;
+                }
+            }
+            Debug.Log($"[PowerUp] Buff nerfé appliqué à {gm.players.Count} personnages.");
         }
         else
         {
-            Debug.LogError("[PowerUp] Impossible de trouver PlayerShooting !");
+            Debug.LogError("[PowerUp] Impossible de trouver GroupManager !");
         }
 
         Destroy(gameObject);

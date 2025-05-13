@@ -2,37 +2,37 @@ using UnityEngine;
 
 public class BuffSpawner : MonoBehaviour
 {
-    public GameObject[] buffs; // Tableau contenant les buffs
-    public float spawnInterval = 5f; // Temps entre chaque spawn
-    public Transform spawnPoint; // Position de spawn
+    [Header("Buffs disponibles")]
+    [Tooltip("Liste des prefabs de buffs")]
+    public GameObject[] buffPrefabs;
+    [Tooltip("Intervalle de spawn (nerfé)")]
+    public float spawnInterval = 10f;
+    [Tooltip("Chance de spawn d'un buff (ex: 50% = 0.5f)")]
+    public float spawnChance = 0.5f;
 
     void Start()
     {
-        if (buffs.Length == 0 || spawnPoint == null)
-        {
-            Debug.LogError("[BuffSpawner] Aucun buff défini ou spawnPoint manquant !");
-            return;
-        }
-
-        // Spawn immédiat du premier buff
-        SpawnBuff();
-
-        // Démarrage du spawn régulier
-        InvokeRepeating(nameof(SpawnBuff), spawnInterval, spawnInterval);
+        InvokeRepeating(nameof(SpawnBuff), spawnInterval * 3f, spawnInterval * 3f); // Nerf du spawn
     }
 
     void SpawnBuff()
     {
-        if (buffs.Length == 0 || spawnPoint == null) return;
-
-        int randomIndex = Random.Range(0, buffs.Length);
-        GameObject newBuff = Instantiate(buffs[randomIndex], spawnPoint.position, Quaternion.identity);
-
-        // Vérifie si le buff spawn un clone et l’ajoute au CharacterManager
-        CharacterController clone = newBuff.GetComponent<CharacterController>();
-        if (clone != null)
+        if (Random.value > spawnChance) // Vérifie la probabilité de spawn
         {
-            CharacterManager.Instance?.RegisterCharacter(newBuff);
+            Debug.Log("[BuffSpawner] Pas de buff cette fois !");
+            return;
         }
+
+        if (buffPrefabs.Length == 0)
+        {
+            Debug.LogError("[BuffSpawner] Aucun buff assigné !");
+            return;
+        }
+
+        GameObject chosenBuff = buffPrefabs[Random.Range(0, buffPrefabs.Length)]; // Buff aléatoire
+        Vector3 spawnPos = transform.position; // Spawn directement sur le spawner
+
+        Instantiate(chosenBuff, spawnPos, Quaternion.identity);
+        Debug.Log($"[BuffSpawner] Nouveau buff spawné : {chosenBuff.name}");
     }
 }

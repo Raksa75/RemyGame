@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2955277983497149464}
   - component: {fileID: 3923393590555715423}
   - component: {fileID: 5486280511804058382}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: HPText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -190,7 +190,7 @@ GameObject:
   - component: {fileID: 9155140697686164530}
   - component: {fileID: 6046959659327377746}
   - component: {fileID: 7510634067584402506}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: PowerMultiplier
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -303,7 +303,7 @@ MonoBehaviour:
   clonesContainer: {fileID: 0}
   hpText: {fileID: 5486280511804058382}
   moveSpeed: 9
-  baseValue: 1
+  baseValue: 3
   spawnRadius: 1.5
   environmentMask:
     serializedVersion: 2

@@ -11,6 +11,8 @@ public class PowerUpMultiplier : MonoBehaviour
     public Transform clonesContainer;
     [Tooltip("TextMeshPro affichant la valeur actuelle")]
     public TextMeshPro hpText;
+    [Tooltip("Référence au GroupManager")]
+    private GroupManager gm;
 
     [Header("Mouvement du PowerUp")]
     [Tooltip("Vitesse de déplacement")]
@@ -18,7 +20,7 @@ public class PowerUpMultiplier : MonoBehaviour
     private Vector3 moveDirection;
 
     [Header("Paramètres du PowerUp")]
-    [Tooltip("Valeur de base au lancement")]
+    [Tooltip("Valeur de base au lancement (nerf : divisé par 3)")]
     public int baseValue = 1;
     [Tooltip("Distance maximale de spawn autour du joueur")]
     public float spawnRadius = 1.5f;
@@ -44,7 +46,8 @@ public class PowerUpMultiplier : MonoBehaviour
 
     void Start()
     {
-        currentValue = baseValue;
+        gm = FindFirstObjectByType<GroupManager>();
+        currentValue = baseValue / 3;  // Nerf du nombre de clones
 
         if (hpText != null)
             hpText.text = currentValue.ToString();
@@ -73,61 +76,75 @@ public class PowerUpMultiplier : MonoBehaviour
         }
         else if (other.CompareTag("Player"))
         {
-            Debug.Log("[PowerUpMultiplier] Activation du buff de multiplication !");
-            SpawnClones(other.transform);
-            Debug.Log("[PowerUpMultiplier] Suppression du PowerUp après activation.");
-            Destroy(gameObject);
+            ApplyBuffAndDestroy(other.transform);
         }
     }
 
-    private void SpawnClones(Transform playerTransform)
+    private void ApplyBuffAndDestroy(Transform playerTransform)
     {
-        if (playerPrefab == null)
+        if (gm == null)
+            gm = FindFirstObjectByType<GroupManager>();
+
+        if (gm != null)
         {
-            Debug.LogError("[PowerUpMultiplier] playerPrefab n'est pas assigné !");
-            return;
+            int totalClones = Mathf.Max(1, currentValue / 3);  // Nerf du multiplicateur
+
+            for (int i = 0; i < totalClones; i++)
+            {
+                SpawnClone(playerTransform);
+            }
+
+            Debug.Log($"[PowerUpMultiplier] Spawn de {totalClones} clones nerfés.");
         }
+        else
+        {
+            Debug.LogError("[PowerUpMultiplier] Impossible de trouver GroupManager !");
+        }
+
+        Destroy(gameObject);
+    }
+
+    private void SpawnClone(Transform playerTransform)
+    {
+        if (playerPrefab == null) return;
 
         float checkRadius = spawnCheckRadius;
         var cc = playerPrefab.GetComponent<CharacterController>();
         if (cc != null)
             checkRadius = Mathf.Max(checkRadius, cc.radius);
 
-        for (int i = 0; i < currentValue; i++)
+        Vector3 spawnPos = playerTransform.position;
+        bool found = false;
+
+        for (int attempt = 0; attempt < maxSpawnAttempts; attempt++)
         {
-            Vector3 spawnPos = playerTransform.position;
-            bool found = false;
+            Vector2 offset = Random.insideUnitCircle * spawnRadius;
+            Vector3 candidate = playerTransform.position + new Vector3(offset.x, 0f, offset.y);
 
-            for (int attempt = 0; attempt < maxSpawnAttempts; attempt++)
+            if (!Physics.CheckSphere(candidate, checkRadius, environmentMask, QueryTriggerInteraction.Ignore))
             {
-                Vector2 offset = Random.insideUnitCircle * spawnRadius;
-                Vector3 candidate = playerTransform.position + new Vector3(offset.x, 0f, offset.y);
-
-                if (!Physics.CheckSphere(candidate, checkRadius, environmentMask, QueryTriggerInteraction.Ignore))
-                {
-                    spawnPos = candidate;
-                    found = true;
-                    break;
-                }
+                spawnPos = candidate;
+                found = true;
+                break;
             }
-
-            if (!found)
-                spawnPos = playerTransform.position + new Vector3(Random.Range(-spawnRadius, spawnRadius), 0f, Random.Range(-spawnRadius, spawnRadius));
-
-            GameObject clone = Instantiate(playerPrefab, spawnPos, playerTransform.rotation);
-            if (clonesContainer != null)
-                clone.transform.SetParent(clonesContainer, true);
-
-            clone.tag = "Clone";
-
-            Collider[] cloneCols = clone.GetComponentsInChildren<Collider>();
-            Collider[] playerCols = playerTransform.GetComponentsInChildren<Collider>();
-
-            foreach (var c in cloneCols)
-                foreach (var pc in playerCols)
-                    Physics.IgnoreCollision(c, pc);
-
-            Debug.Log($"[PowerUpMultiplier] Clone {i + 1} spawned at {spawnPos}");
         }
+
+        if (!found)
+            spawnPos = playerTransform.position + new Vector3(Random.Range(-spawnRadius, spawnRadius), 0f, Random.Range(-spawnRadius, spawnRadius));
+
+        GameObject clone = Instantiate(playerPrefab, spawnPos, playerTransform.rotation);
+        if (clonesContainer != null)
+            clone.transform.SetParent(clonesContainer, true);
+
+        clone.tag = "Clone";
+
+        Collider[] cloneCols = clone.GetComponentsInChildren<Collider>();
+        Collider[] playerCols = playerTransform.GetComponentsInChildren<Collider>();
+
+        foreach (var c in cloneCols)
+            foreach (var pc in playerCols)
+                Physics.IgnoreCollision(c, pc);
+
+        Debug.Log($"[PowerUpMultiplier] Clone spawné à {spawnPos}");
     }
 }

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1689863029194510095}
   - component: {fileID: 8918726125437742369}
   - component: {fileID: 5766163839669106254}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: HPText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -190,7 +190,7 @@ GameObject:
   - component: {fileID: 1701996542886670602}
   - component: {fileID: 5851971914912323568}
   - component: {fileID: 4507919067337063390}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: PowerUp
   m_TagString: PowerUp
   m_Icon: {fileID: 0}
@@ -299,10 +299,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6233adeaf89f07468ff60f12b9b0492, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerObject: {fileID: 5580735357243324611, guid: c62524a64e94ee44aa24a4224b698311, type: 3}
   hpText: {fileID: 5766163839669106254}
   maxHealth: 10
-  attackSpeedBonus: 10
+  attackSpeedBonus: 1
   moveSpeed: 9
 --- !u!54 &4507919067337063390
 Rigidbody:
