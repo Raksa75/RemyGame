@@ -101,6 +101,7 @@ GameObject:
   - component: {fileID: 5744987787651813830}
   - component: {fileID: 6561618247534987442}
   - component: {fileID: 2251814270976666338}
+  - component: {fileID: 3514639534706262227}
   m_Layer: 8
   m_Name: playerrefab
   m_TagString: Player
@@ -142,6 +143,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 5
+  jumpForce: 7
+  gravity: 20
   environmentMask:
     serializedVersion: 2
     m_Bits: 0
@@ -257,6 +260,23 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
+--- !u!114 &3514639534706262227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5580735357243324611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 383ee20fb68ec564487ae327a73a33db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  jumpForce: 20
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 2048
+  groundStabilizationDelay: 0.2
 --- !u!1 &6039200173211788244
 GameObject:
   m_ObjectHideFlags: 0

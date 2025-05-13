@@ -6,20 +6,24 @@ public class HorizontalMovementController : MonoBehaviour
     [Header("Paramètres de déplacement")]
     [Tooltip("Vitesse de déplacement sur l'axe X")]
     public float speed = 5f;
-    [Tooltip("LayerMask pour détecter uniquement les murs/obstacles")]
+    [Tooltip("Force du saut")]
+    public float jumpForce = 7f;
+    [Tooltip("Gravité appliquée")]
+    public float gravity = 15f;
+    [Tooltip("LayerMask pour détecter les obstacles")]
     public LayerMask environmentMask;
-    [Tooltip("Distance tampon devant le personnage pour la détection")]
+    [Tooltip("Distance tampon pour les murs")]
     public float wallCheckBuffer = 0.05f;
 
     private CharacterController cc;
-    // -1 = bloqué à gauche, +1 = bloqué à droite, 0 = pas bloqué
     private float blockedDir = 0f;
+    private float verticalVelocity = 0f;
+    private bool isGrounded;
 
     void Start()
     {
         CharacterManager.Instance?.RegisterCharacter(gameObject);
     }
-
 
     void Awake()
     {
@@ -28,44 +32,65 @@ public class HorizontalMovementController : MonoBehaviour
 
     void Update()
     {
-        // 1) Lecture de l’input horizontal
-        float h = Input.GetAxis("Horizontal");
-        if (Mathf.Abs(h) < 0.01f)
-            return;
+        CheckGrounded();
+        HandleMovement();
+    }
 
+    void HandleMovement()
+    {
+        // 1️⃣ Gestion du déplacement horizontal
+        float h = Input.GetAxis("Horizontal");
         float sign = Mathf.Sign(h);
 
-        // 2) Si déjà bloqué dans ce sens, on n’essaie pas
-        if (blockedDir != 0f && sign == blockedDir)
-            return;
-
-        // 3) Si on change de sens, on débloque
-        if (blockedDir != 0f && sign == -blockedDir)
-            blockedDir = 0f;
-
-        // 4) Prépare le mouvement
-        Vector3 direction = new Vector3(h, 0f, 0f).normalized;
-        float moveDist = speed * Time.deltaTime;
-
-        // Origine du raycast au centre du CharacterController
-        Vector3 origin = transform.TransformPoint(cc.center);
-
-        // 5) Raycast avant pour vérifier la présence d’un mur
-        if (Physics.Raycast(origin, direction, moveDist + wallCheckBuffer, environmentMask))
+        if (Mathf.Abs(h) > 0.01f)
         {
-            blockedDir = sign;
-            Debug.Log($"[HorizontalMovement] Bloqué côté {(sign > 0 ? "droite" : "gauche")}");
-            return;
+            if (blockedDir == 0f || sign != blockedDir)
+            {
+                Vector3 direction = new Vector3(h, 0f, 0f).normalized;
+                float moveDist = speed * Time.deltaTime;
+
+                Vector3 origin = transform.TransformPoint(cc.center);
+                if (!Physics.Raycast(origin, direction, moveDist + wallCheckBuffer, environmentMask))
+                {
+                    blockedDir = 0f;
+                    cc.Move(direction * moveDist);
+                }
+                else
+                {
+                    blockedDir = sign;
+                }
+            }
         }
 
-        // 6) Aucun mur détecté, on bouge et on débloque
-        blockedDir = 0f;
-        cc.Move(direction * moveDist);
+        // 2️⃣ Gestion du saut et de la gravité
+        if (isGrounded && Input.GetKeyDown(KeyCode.Space))
+        {
+            Jump();
+        }
+
+        verticalVelocity -= gravity * Time.deltaTime; // Gravité appliquée
+        cc.Move(new Vector3(0f, verticalVelocity * Time.deltaTime, 0f)); // Appliquer gravité et saut
+    }
+
+    void CheckGrounded()
+    {
+        isGrounded = cc.isGrounded;
+
+        // Si au sol, reset la vélocité verticale
+        if (isGrounded && verticalVelocity < 0f)
+        {
+            verticalVelocity = -1f; // Léger push vers le bas pour éviter flottement
+        }
+    }
+
+    void Jump()
+    {
+        verticalVelocity = Mathf.Sqrt(2f * jumpForce * gravity); // Calcul basé sur l'énergie potentielle
+        Debug.Log($"[HorizontalMovement] Saut déclenché avec une force de {verticalVelocity} !");
     }
 
     void OnDestroy()
     {
         CharacterManager.Instance?.RemoveCharacter(gameObject);
     }
-
 }

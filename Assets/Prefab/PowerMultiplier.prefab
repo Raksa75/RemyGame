@@ -302,8 +302,8 @@ MonoBehaviour:
   playerPrefab: {fileID: 5580735357243324611, guid: c62524a64e94ee44aa24a4224b698311, type: 3}
   clonesContainer: {fileID: 0}
   hpText: {fileID: 5486280511804058382}
-  moveSpeed: 9
-  baseValue: 3
+  moveSpeed: 5
+  baseValue: 1
   spawnRadius: 1.5
   environmentMask:
     serializedVersion: 2
@@ -332,7 +332,7 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0

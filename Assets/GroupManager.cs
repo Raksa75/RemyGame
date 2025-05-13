@@ -3,47 +3,34 @@ using UnityEngine;
 
 public class GroupManager : MonoBehaviour
 {
-    [Tooltip("Force de déplacement du groupe")]
-    public float speed = 5f;
-    [Tooltip("Force qui attire les clones vers le centre")]
-    public float cohesionStrength = 2f;
     [Tooltip("Liste des joueurs actifs")]
     public List<GameObject> players = new List<GameObject>();
 
+    [Tooltip("UI de fin de partie (optionnel)")]
+    public GameObject gameOverUI;
+
     void Update()
     {
-        if (players.Count == 0) return;
+        CheckGameOver(); // Vérifie si tous les joueurs sont morts
+    }
 
-        float moveInput = Input.GetAxis("Horizontal");
-        Vector3 moveDirection = new Vector3(moveInput, 0f, 0f) * speed * Time.deltaTime;
-
-        foreach (GameObject player in players)
+    void CheckGameOver()
+    {
+        if (players.Count == 0) // Aucun joueur restant ?
         {
-            if (player != null)
-            {
-                player.transform.position += moveDirection;
-
-                // Ajout de la force de réorganisation
-                ApplyCohesion(player);
-            }
+            Debug.Log("[GroupManager] Plus de joueurs en vie. Fin du jeu !");
+            EndGame();
         }
     }
 
-    void ApplyCohesion(GameObject player)
+    void EndGame()
     {
-        if (players.Count < 2) return;
+        // Activer l'écran de fin si disponible
+        if (gameOverUI != null)
+            gameOverUI.SetActive(true);
 
-        Vector3 center = Vector3.zero;
-        foreach (var p in players)
-        {
-            if (p != null)
-                center += p.transform.position;
-        }
-        center /= players.Count;
-
-        Vector3 cohesionForce = (center - player.transform.position).normalized * cohesionStrength * Time.deltaTime;
-
-        player.transform.position += cohesionForce;
+        // Arrêter complètement le jeu
+        Time.timeScale = 0f;
     }
 
     public void RegisterPlayer(GameObject newPlayer)
