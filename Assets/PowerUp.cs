@@ -1,52 +1,45 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 
 [RequireComponent(typeof(Collider), typeof(Rigidbody))]
 public class PowerUp : MonoBehaviour
 {
-    [Header("Références (à assigner dans l'Inspector)")]
-    [Tooltip("GameObject du joueur (celui portant le script de tir)")]
-    public GameObject playerObject;
-    [Tooltip("TextMeshPro 3D qui affichera les PV restants")]
+    [Header("RÃ©fÃ©rences")]
+    [Tooltip("RÃ©fÃ©rence automatique du joueur")]
+    private PlayerShooting shooterScript;
+    [Tooltip("TextMeshPro affichant les PV restants")]
     public TextMeshPro hpText;
 
-    [Header("Paramètres du PowerUp")]
-    [Tooltip("PV initiaux")]
+    [Header("ParamÃ¨tres du PowerUp")]
+    [Tooltip("Points de vie initiaux du buff")]
     public int maxHealth = 3;
-    [Tooltip("Bonus d'attackSpeed donné au joueur")]
+    [Tooltip("Bonus d'attackSpeed donnÃ© au joueur")]
     public float attackSpeedBonus = 0.5f;
-    [Tooltip("Vitesse de déplacement en ligne droite")]
+    [Tooltip("Vitesse de dÃ©placement")]
     public float moveSpeed = 3f;
 
     private int currentHealth;
     private Vector3 moveDirection;
-    private PlayerShooting shooterScript;
 
     void Start()
     {
-        // Initialise la vie et la direction
+        // Initialisation
         currentHealth = maxHealth;
         moveDirection = transform.forward * -1f;
 
-        // Configure UI
+        // Utilisation de FindFirstObjectByType<T>() au lieu de FindObjectOfType<T>()
+        shooterScript = FindFirstObjectByType<PlayerShooting>();
+
+        if (shooterScript == null)
+            Debug.LogError("[PowerUp] Aucun PlayerShooting trouvÃ© !");
+
+        // VÃ©rification de l'UI
         if (hpText != null)
             hpText.text = currentHealth.ToString();
         else
-            Debug.LogError("[PowerUp] hpText non assigné !");
+            Debug.LogError("[PowerUp] hpText non assignÃ© !");
 
-        // Récupère le script PlayerShooting depuis le GameObject assigné
-        if (playerObject != null)
-        {
-            shooterScript = playerObject.GetComponent<PlayerShooting>();
-            if (shooterScript == null)
-                Debug.LogError("[PowerUp] Aucun PlayerShooting trouvé sur playerObject !");
-        }
-        else
-        {
-            Debug.LogError("[PowerUp] playerObject non assigné !");
-        }
-
-        // Configure Collider et Rigidbody
+        // Configuration Collider & Rigidbody
         var col = GetComponent<Collider>();
         col.isTrigger = true;
         var rb = GetComponent<Rigidbody>();
@@ -55,35 +48,50 @@ public class PowerUp : MonoBehaviour
 
     void Update()
     {
-        // Déplacement constant en world space
+        // DÃ©placement constant
         transform.Translate(moveDirection * moveSpeed * Time.deltaTime, Space.World);
     }
 
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"[PowerUp] Collision dÃ©tectÃ©e avec {other.gameObject.name}");
+
         if (other.CompareTag("Bullet"))
         {
             Destroy(other.gameObject);
             currentHealth--;
-            if (hpText != null)
-                hpText.text = currentHealth.ToString();
+            UpdateUIText();
 
             if (currentHealth <= 0)
                 ApplyBuffAndDestroy();
         }
-        else if (other.gameObject == playerObject)
+        else if (other.CompareTag("Player"))
         {
             ApplyBuffAndDestroy();
         }
     }
 
+    private void UpdateUIText()
+    {
+        if (hpText != null)
+            hpText.text = currentHealth.ToString();
+    }
+
     private void ApplyBuffAndDestroy()
     {
+        if (shooterScript == null)
+            shooterScript = FindFirstObjectByType<PlayerShooting>();
+
         if (shooterScript != null)
         {
             shooterScript.attackSpeed += attackSpeedBonus;
-            Debug.Log($"[PowerUp] attackSpeed augmenté à {shooterScript.attackSpeed:F2}");
+            Debug.Log($"[PowerUp] attackSpeed augmentÃ© Ã  {shooterScript.attackSpeed:F2}");
         }
+        else
+        {
+            Debug.LogError("[PowerUp] Impossible de trouver PlayerShooting !");
+        }
+
         Destroy(gameObject);
     }
 }

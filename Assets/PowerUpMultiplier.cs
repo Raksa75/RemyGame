@@ -1,5 +1,3 @@
-// PowerUpMultiplier.cs
-// Ajout de l’ignorance des collisions entre clones et joueur/entre clones  
 using UnityEngine;
 using TMPro;
 
@@ -11,11 +9,11 @@ public class PowerUpMultiplier : MonoBehaviour
     public GameObject playerPrefab;
     [Tooltip("(Optionnel) Container pour organiser les clones")]
     public Transform clonesContainer;
-    [Tooltip("TextMeshPro 3D qui affichera la valeur actuelle")]
+    [Tooltip("TextMeshPro affichant la valeur actuelle")]
     public TextMeshPro hpText;
 
     [Header("Mouvement du PowerUp")]
-    [Tooltip("Vitesse de déplacement dans la direction initiale")]
+    [Tooltip("Vitesse de déplacement")]
     public float moveSpeed = 3f;
     private Vector3 moveDirection;
 
@@ -37,82 +35,74 @@ public class PowerUpMultiplier : MonoBehaviour
 
     void Awake()
     {
-        // Configure Collider en trigger et Rigidbody kinematic pour OnTriggerEnter
         Collider col = GetComponent<Collider>();
         col.isTrigger = true;
+
         Rigidbody rb = GetComponent<Rigidbody>();
         rb.isKinematic = true;
     }
 
     void Start()
     {
-        // Initialisation de la valeur et de l'UI
         currentValue = baseValue;
-        if (hpText == null)
-            Debug.LogError("[PowerUpMultiplier] hpText non assigné !");
-        else
-            UpdateUIText();
 
-        // Détermine la direction de déplacement initiale (forward local)
-        moveDirection = transform.forward * -1f;
+        if (hpText != null)
+            hpText.text = currentValue.ToString();
 
-        // Vérifie les références essentielles
+        moveDirection = -transform.forward;
+
         if (playerPrefab == null)
             Debug.LogError("[PowerUpMultiplier] playerPrefab non assigné !");
     }
 
     void Update()
     {
-        // Déplacement constant en world space
         transform.Translate(moveDirection * moveSpeed * Time.deltaTime, Space.World);
     }
 
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"[PowerUpMultiplier] Collision détectée avec {other.gameObject.name}");
+
         if (other.CompareTag("Bullet"))
         {
             Destroy(other.gameObject);
             currentValue++;
-            UpdateUIText();
+            if (hpText != null)
+                hpText.text = currentValue.ToString();
         }
         else if (other.CompareTag("Player"))
         {
+            Debug.Log("[PowerUpMultiplier] Activation du buff de multiplication !");
             SpawnClones(other.transform);
+            Debug.Log("[PowerUpMultiplier] Suppression du PowerUp après activation.");
             Destroy(gameObject);
         }
-    }
-
-    private void UpdateUIText()
-    {
-        if (hpText != null)
-            hpText.text = currentValue.ToString();
     }
 
     private void SpawnClones(Transform playerTransform)
     {
         if (playerPrefab == null)
+        {
+            Debug.LogError("[PowerUpMultiplier] playerPrefab n'est pas assigné !");
             return;
+        }
 
-        // Récupère le CharacterController pour son rayon, si présent
         float checkRadius = spawnCheckRadius;
         var cc = playerPrefab.GetComponent<CharacterController>();
         if (cc != null)
             checkRadius = Mathf.Max(checkRadius, cc.radius);
-
-        // Liste pour ignorer collisions
-        var existingClones = clonesContainer != null ? clonesContainer.GetComponentsInChildren<Transform>() : new Transform[0];
 
         for (int i = 0; i < currentValue; i++)
         {
             Vector3 spawnPos = playerTransform.position;
             bool found = false;
 
-            // Tente de trouver une position libre
             for (int attempt = 0; attempt < maxSpawnAttempts; attempt++)
             {
                 Vector2 offset = Random.insideUnitCircle * spawnRadius;
                 Vector3 candidate = playerTransform.position + new Vector3(offset.x, 0f, offset.y);
-                // Vérifie qu'il n'y a pas d'obstacle
+
                 if (!Physics.CheckSphere(candidate, checkRadius, environmentMask, QueryTriggerInteraction.Ignore))
                 {
                     spawnPos = candidate;
@@ -121,44 +111,23 @@ public class PowerUpMultiplier : MonoBehaviour
                 }
             }
 
-            // Si pas trouvé de place, on utilise position autour
             if (!found)
-                spawnPos = playerTransform.position + Random.onUnitSphere * spawnRadius;
+                spawnPos = playerTransform.position + new Vector3(Random.Range(-spawnRadius, spawnRadius), 0f, Random.Range(-spawnRadius, spawnRadius));
 
-            // Instanciation
             GameObject clone = Instantiate(playerPrefab, spawnPos, playerTransform.rotation);
             if (clonesContainer != null)
                 clone.transform.SetParent(clonesContainer, true);
 
-            // Tag & ignore collisions
             clone.tag = "Clone";
-            foreach (Transform child in clone.transform)
-                child.tag = "Clone";
 
-            // Désactive collisions clone↔joueur
             Collider[] cloneCols = clone.GetComponentsInChildren<Collider>();
             Collider[] playerCols = playerTransform.GetComponentsInChildren<Collider>();
+
             foreach (var c in cloneCols)
                 foreach (var pc in playerCols)
                     Physics.IgnoreCollision(c, pc);
 
-            // Désactive collisions clone↔clone existants
-            foreach (var t in existingClones)
-            {
-                if (t == clone.transform) continue;
-                Collider[] otherCols = t.GetComponentsInChildren<Collider>();
-                foreach (var c in cloneCols)
-                    foreach (var oc in otherCols)
-                        Physics.IgnoreCollision(c, oc);
-            }
-
-            // Hérite de l'attackSpeed du joueur original
-            var shooterOriginal = playerTransform.GetComponent<PlayerShooting>();
-            var shooterClone = clone.GetComponent<PlayerShooting>();
-            if (shooterOriginal != null && shooterClone != null)
-                shooterClone.attackSpeed = shooterOriginal.attackSpeed;
+            Debug.Log($"[PowerUpMultiplier] Clone {i + 1} spawned at {spawnPos}");
         }
-
-        Debug.Log($"[PowerUpMultiplier] Spawned {currentValue} clone(s).");
     }
 }

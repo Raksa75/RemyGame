@@ -15,6 +15,12 @@ public class HorizontalMovementController : MonoBehaviour
     // -1 = bloqué à gauche, +1 = bloqué à droite, 0 = pas bloqué
     private float blockedDir = 0f;
 
+    void Start()
+    {
+        CharacterManager.Instance?.RegisterCharacter(gameObject);
+    }
+
+
     void Awake()
     {
         cc = GetComponent<CharacterController>();
@@ -56,4 +62,10 @@ public class HorizontalMovementController : MonoBehaviour
         blockedDir = 0f;
         cc.Move(direction * moveDist);
     }
+
+    void OnDestroy()
+    {
+        CharacterManager.Instance?.RemoveCharacter(gameObject);
+    }
+
 }

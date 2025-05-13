@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 
-public class SeparationController : MonoBehaviour
+public class SeparationBehaviour : MonoBehaviour
 {
     [Tooltip("Distance minimale entre clones")]
     public float desiredSeparation = 1f;
-    [Tooltip("Force de séparation (units/sec)")]
+    [Tooltip("Force de séparation")]
     public float separationStrength = 2f;
     [Tooltip("LayerMask des clones seuls")]
     public LayerMask cloneLayer;
@@ -15,19 +15,17 @@ public class SeparationController : MonoBehaviour
 
     void Start()
     {
-        // On récupère le rayon de collision via le collider
         radius = GetComponent<Collider>().bounds.extents.magnitude;
+
+        // Ajoute chaque clone au groupe dynamique
+        GroupManager gm = FindFirstObjectByType<GroupManager>();
+        if (gm != null)
+            gm.RegisterPlayer(gameObject);
     }
 
     void FixedUpdate()
     {
-        // 1) Récupère tous les clones dans le spectre
-        Collider[] hits = Physics.OverlapSphere(
-            transform.position,
-            desiredSeparation,
-            cloneLayer,
-            QueryTriggerInteraction.Ignore
-        );
+        Collider[] hits = Physics.OverlapSphere(transform.position, desiredSeparation, cloneLayer, QueryTriggerInteraction.Ignore);
 
         Vector3 move = Vector3.zero;
         int count = 0;
@@ -37,27 +35,28 @@ public class SeparationController : MonoBehaviour
             float d = Vector3.Distance(transform.position, h.transform.position);
             if (d > 0f && d < desiredSeparation)
             {
-                // Pousse proportionnel à la proximité
                 move += (transform.position - h.transform.position).normalized * ((desiredSeparation - d) / desiredSeparation);
                 count++;
             }
         }
+
         if (count == 0) return;
 
-        // 2) Moyenne, normalisation puis échelle par la force et le time
         move = (move / count).normalized * separationStrength * Time.fixedDeltaTime;
 
-        // 3) Ne bouge que si la nouvelle position est libre de murs
         Vector3 target = transform.position + move;
+
+        // Empêche la fusion et assure l’interaction avec les murs
         if (!Physics.CheckSphere(target, radius, environmentMask, QueryTriggerInteraction.Ignore))
         {
             transform.position = target;
         }
     }
 
-    void OnDrawGizmosSelected()
+    void OnDestroy()
     {
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, desiredSeparation);
+        GroupManager gm = FindFirstObjectByType<GroupManager>();
+        if (gm != null)
+            gm.RemovePlayer(gameObject);
     }
 }
