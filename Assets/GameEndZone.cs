@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameEndZone : MonoBehaviour
 {
@@ -21,7 +22,7 @@ public class GameEndZone : MonoBehaviour
         if (gameOverUI != null)
             gameOverUI.SetActive(true);
 
-        Time.timeScale = 0f; // Arrêt du jeu
+        SceneManager.LoadScene("Menu"); // Mets le nom exact de ta scène de jeu
         Debug.Log("[GameEndZone] Le jeu est maintenant stoppé.");
     }
 }

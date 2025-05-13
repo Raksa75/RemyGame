@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GroupManager : MonoBehaviour
 {
@@ -30,7 +31,7 @@ public class GroupManager : MonoBehaviour
             gameOverUI.SetActive(true);
 
         // Arrêter complètement le jeu
-        Time.timeScale = 0f;
+        SceneManager.LoadScene("Menu"); // Mets le nom exact de ta scène de jeu
     }
 
     public void RegisterPlayer(GameObject newPlayer)
